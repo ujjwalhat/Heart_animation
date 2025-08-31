@@ -8,16 +8,18 @@
   <style>
     html, body {
       margin: 0;
-      height: 100%;
       background: #000;
-      overflow: hidden;
+      height: 100%;
+      overflow: hidden; /* no scroll */
     }
     .wrap {
-      height: 100%;
+      height: 100vh; /* full screen only */
       display: grid;
       place-items: center;
       position: relative;
       z-index: 20;
+      padding: 1rem;
+      text-align: center;
     }
     canvas#canvas {
       position: fixed;
@@ -27,7 +29,6 @@
       pointer-events: none;
       z-index: 10;
     }
-    /* White glowing orb background */
     #glow {
       position: fixed;
       top: 0; left: 0;
@@ -39,16 +40,23 @@
       z-index: 5;
       transition: transform 0.15s ease-out;
     }
-    /* Text reveal */
     h1.reveal {
       font-family: "Sofia", cursive;
-      font-size: clamp(2rem, 6vw, 5rem);
+      font-size: clamp(2rem, 6vw, 6rem); /* scales nicely desktop + mobile */
+      line-height: 1.3;
       color: #fff;
       opacity: 0;
       transition: opacity 2s ease, text-shadow 2s ease;
       text-shadow: none;
       user-select: none;
+      word-wrap: break-word;
     }
+    @media (max-width: 600px) {
+  h1.reveal {
+    font-size: clamp(1.5rem, 6vw, 4rem); /* smaller for phones */
+  }
+}
+    
     h1.reveal.visible {
       opacity: 1;
       text-shadow: 0 0 12px rgba(255,255,255,0.4);
@@ -57,11 +65,12 @@
 </head>
 <body>
   <div class="wrap">
-    <h1 class="reveal">HELLO BABYYYYYYY !!!!!
-    <br/>
-    Gud Morning Pineapple ❤️  
+    <h1 class="reveal">
+      HELLO BABYYYYYYY !!!!! <br/>
+      Gud Morning Pineapple ❤️  
     </h1>
   </div>
+
   <div id="glow"></div>
   <canvas id="canvas"></canvas>
 
@@ -74,7 +83,6 @@
     let w, h, balls = [];
     let mouse = { x: innerWidth/2, y: innerHeight/2 };
 
-    // Heart colors
     const rgb = [
       "rgba(26, 188, 156,0.35)",
       "rgba(46, 204, 113,0.35)",
@@ -98,10 +106,8 @@
     function animationLoop() {
       ctx.clearRect(0, 0, w, h);
       ctx.globalCompositeOperation = 'lighter';
-
       drawBalls();
       balls = balls.filter(b => b.time <= b.ttl);
-
       requestAnimationFrame(animationLoop);
     }
 
@@ -149,7 +155,6 @@
         ctx.fillStyle = this.style;
         ctx.beginPath();
         const x = this.x, y = this.y, size = this.size;
-        // Heart shape
         ctx.moveTo(x, y + size / 4);
         ctx.bezierCurveTo(x - size, y - size / 2, x - size, y + size / 1.5, x, y + size);
         ctx.bezierCurveTo(x + size, y + size / 1.5, x + size, y - size / 2, x, y + size / 4);
@@ -168,27 +173,44 @@
       }
     }
 
-    // Floating random hearts
+    // Random floating hearts
     setInterval(() => {
       const x = getRandomInt(0, w);
       const y = getRandomInt(0, h);
       spawnHearts(x, y, 2);
     }, 180);
 
-    // Cursor hearts trail + glow orb
-    window.addEventListener("mousemove", (e) => {
-      mouse.x = e.x;
-      mouse.y = e.y;
+    // Glow + trail
+    function handleMove(x, y) {
+      mouse.x = x;
+      mouse.y = y;
       spawnHearts(mouse.x, mouse.y, 4);
+      glow.style.transform = `translate(${x - w/2}px, ${y - h/2}px)`;
+    }
 
-      // Move glowing orb
-      glow.style.transform = `translate(${e.x - w/2}px, ${e.y - h/2}px)`;
+    // Mouse
+    window.addEventListener("mousemove", (e) => {
+      handleMove(e.x, e.y);
     });
 
-    // Reveal text permanently after first hover
+    // Touch
+    window.addEventListener("touchstart", (e) => {
+      const touch = e.touches[0];
+      handleMove(touch.clientX, touch.clientY);
+    });
+    window.addEventListener("touchmove", (e) => {
+      const touch = e.touches[0];
+      handleMove(touch.clientX, touch.clientY);
+    });
+
+   
     revealText.addEventListener("mouseenter", () => {
-      revealText.classList.add("visible");
-    });
+  revealText.classList.add("visible");
+});
+
+window.addEventListener("touchmove", () => {
+  revealText.classList.add("visible");
+}, { once: true }); // "once" means it runs only the first time
 
     window.addEventListener("DOMContentLoaded", init);
     window.addEventListener("resize", resizeReset);
